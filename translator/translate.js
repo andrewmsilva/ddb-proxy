@@ -1,5 +1,5 @@
 import { Sources, translateWord, getLanguages } from "@parvineyvazov/json-translator";
-import { convertTextMeasurements } from "./convert-measurements.js";
+import { convertTextMeasurements } from "./convert-measure.js";
 import jsdom from "jsdom";
 
 global.source = Sources.BingTranslate;
