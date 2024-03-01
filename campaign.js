@@ -1,9 +1,10 @@
 // This data is the light version of data available in the character builder
-const fetch = require("node-fetch");
-const CONFIG = require("./config.js");
-const authentication = require("./auth.js");
-const Cache = require("./cache");
-var CACHE_CAMPAIGNS = new Cache("CAMPAIGNS", 0.25);
+import fetch from "node-fetch";
+import CONFIG from "./config.js";
+import authentication from "./auth.js";
+import Cache from "./cache.js";
+
+const CACHE_CAMPAIGNS = new Cache("CAMPAIGNS", 0.25);
 
 // this endpoint aggressively caches campaigns as it's prone to been marked as a bot
 const getCampaigns = (cobalt, cacheId) => {

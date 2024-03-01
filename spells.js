@@ -1,6 +1,8 @@
 const fetch = require("node-fetch");
 const CONFIG = require("./config.js");
 const authentication = require("./auth.js");
+const { translateContent, convertToMeters } = require("./translator/translate-content.js");
+const { translateHtml } = require("./translator/translate-html.js");
 
 const isValidData = data => {
   return data.success === true;
@@ -117,9 +119,6 @@ const extractAlwaysKnownSpells = (classInfo, cobaltId, cantrips, spellListIds=[]
               return true;
             }
           });
-          console.log(
-            `Adding ${filteredSpells.length} of ${json.data.length} always known spells available to a lvl${spellLevelAccess} ${classInfo.name} caster...`
-          );
           resolve(filteredSpells);
         } else {
           console.log("Received no valid spell data, instead:" + json.message);
@@ -291,6 +290,24 @@ function filterHomebrew(data, includeHomebrew) {
     data.character.spells.item = data.character.spells.item.filter(spell => !spell.definition || !spell.definition.isHomebrew);
     return data;
   }
+}
+
+function translateSpell(spell) {
+  spell.definition.name = translateContent(spell.definition.name);
+  spell.definition.description = translateHtml(spell.definition.description);
+  spell.definition.componentsDescription = translateContent(spell.definition.componentsDescription);
+
+  for (let i = 0; i < spell.definition.modifiers?.length; i++) {
+    spell.definition.modifiers[i].friendlyTypeName = translateContent(spell.definition.modifiers[i].friendlyTypeName);
+    spell.definition.modifiers[i].friendlySubtypeName = translateContent(spell.definition.modifiers[i].friendlySubtypeName);
+    spell.definition.modifiers[i].restriction = translateContent(spell.definition.modifiers[i].restriction);
+  }
+
+  if (spell.definition.range) {
+    spell.definition.range.rangeValue = convertToMeters(spell.definition.range.rangeValue, 'feet');
+  }
+
+  return spell;
 }
 
 

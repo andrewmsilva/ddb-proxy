@@ -1,7 +1,7 @@
-const crypto = require("crypto");
-const Cache = require("./cache");
-const fetch = require("node-fetch");
-const CONFIG = require("./config.js");
+import crypto from "crypto";
+import Cache from "./cache.js";
+import fetch from "node-fetch";
+import CONFIG from "./config.js";
 
 var CACHE_AUTH = new Cache("AUTH", 0.08);
 

@@ -1,18 +1,18 @@
-const express = require("express");
-const cors = require("cors");
-const crypto = require("crypto");
+import express from "express";
+import cors from "cors";
+import crypto from "crypto";
 
-const CONFIG = require("./config.js");
-const authentication = require("./auth.js");
+import CONFIG from "./config.js";
+import authentication from "./auth.js";
 
-const filterModifiers = require("./filterModifiers.js");
-const lookup = require("./lookup.js");
+import filterModifiers from "./filterModifiers.js";
+import lookup from "./lookup.js";
 
-const spells = require("./spells.js");
-const character = require("./character.js");
-const items = require("./items.js");
-const monsters = require("./monsters.js");
-const campaign = require("./campaign.js");
+import spells from "./spells.js";
+import character from "./character.js";
+import items from "./items.js";
+import monsters from "./monsters.js";
+import campaign from "./campaign.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -129,6 +129,7 @@ app.post("/proxy/class/spells", cors(), express.json(), (req, res) => {
         return rawSpells;
       })
       .then((data) => {
+        // console.log(data);
         return res
           .status(200)
           .json({ success: true, message: "All available spells successfully received.", data: data });

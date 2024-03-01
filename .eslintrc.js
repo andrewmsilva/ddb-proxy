@@ -11,6 +11,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 8,
   },
+  sourceType: "module",
   rules: {
     indent: ["error", 2, { "SwitchCase": 1 }],
     "linebreak-style": ["error", "unix"],

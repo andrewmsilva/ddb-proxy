@@ -1,6 +1,6 @@
-const fetch = require("node-fetch");
-const CONFIG = require("./config.js");
-const authentication = require("./auth.js");
+import fetch from "node-fetch";
+import CONFIG from "./config.js";
+import authentication from "./auth.js";
 
 
 const isValidData = data => {
