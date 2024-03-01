@@ -1,4 +1,3 @@
-import { languages } from "./languages.js";
 import { Sources, translateWord, getLanguages } from "@parvineyvazov/json-translator";
 
 global.source = Sources.BingTranslate;
@@ -12,9 +11,7 @@ export async function translateContent(content, attempts = 0) {
   }
 
   if (content.includes("@Compendium")) {
-    const splitContent = content.split(
-      /(@Compendium\[[a-zA-Z0-9.]*\]\{[a-zA-Z0-9]*\})/
-    );
+    const splitContent = content.split(/(@Compendium\[[a-zA-Z0-9.]*\]\{[a-zA-Z0-9]*\})/);
 
     const compendiumLinks = [];
     let contentWithoutLinks = "";
@@ -24,25 +21,20 @@ export async function translateContent(content, attempts = 0) {
         const splitParts = part.split(/{|}/);
         compendiumLinks[index] = [splitParts[0], splitParts[2]];
 
-        contentWithoutLinks += `${index === 0 ? "" : separator}${
-          splitParts[1]
-        }${index === splitContent.length - 1 ? "" : separator}`;
+        contentWithoutLinks += `${index === 0 ? "" : separator}${splitParts[1]}${
+          index === splitContent.length - 1 ? "" : separator
+        }`;
       } else {
         contentWithoutLinks += part;
       }
     });
 
-    const translatedContent = await translateContent(
-      contentWithoutLinks,
-      
-    );
+    const translatedContent = await translateContent(contentWithoutLinks);
 
     const translatedSplitContent = translatedContent.split(separator);
 
     compendiumLinks.forEach(([link, after], index) => {
-      translatedSplitContent[index] = `${link}{${
-        translatedSplitContent[index]
-      }}${after ?? ""}`;
+      translatedSplitContent[index] = `${link}{${translatedSplitContent[index]}}${after ?? ""}`;
     });
 
     return translatedSplitContent.join("");
@@ -50,11 +42,7 @@ export async function translateContent(content, attempts = 0) {
 
   const convertedContent = convertMeasurements(content);
 
-  let translatedContent = await translateWord(
-    convertedContent,
-    languages.English,
-    languages.Portuguese_Brazil,
-  );
+  let translatedContent = await translateWord(convertedContent, languages.English, languages.Portuguese_Brazil);
 
   if (translatedContent === "--") {
     if (attempts !== 100) {
@@ -69,10 +57,7 @@ export async function translateContent(content, attempts = 0) {
     translatedContent = ` ${translatedContent}`;
   }
 
-  if (
-    content[content.length - 1] === " " &&
-    translatedContent[translatedContent.length - 1] !== " "
-  ) {
+  if (content[content.length - 1] === " " && translatedContent[translatedContent.length - 1] !== " ") {
     translatedContent = `${translatedContent} `;
   }
 
@@ -80,12 +65,11 @@ export async function translateContent(content, attempts = 0) {
 }
 
 function convertMeasurements(text) {
-  const regex =
-    /(\d+(\.\d+)?)\s*(inch(es)?|foot|feet|yd|yard|mile|oz|ounce|lb|pound)s?/gi;
+  const regex = /(\d+(\.\d+)?)\s*(inch(es)?|foot|feet|yd|yard|mile|oz|ounce|lb|pound)s?/gi;
 
   function replaceMeasurement(match, value, _, unit) {
     const measurementInMeters = convertToMeters(value, unit.toLowerCase());
-    
+
     if (!measurementInMeters) {
       return match;
     } else {
@@ -121,17 +105,17 @@ export function convertToMeters(value, unit) {
   };
 
   if (unit in conversionToMeters) {
-    const convertedValue =  value * conversionToMeters[unit];
+    const convertedValue = value * conversionToMeters[unit];
 
     if (convertedValue < 1) {
-      return { value: Math.round(convertedValue * 100), unit: 'centimeter' };
+      return { value: Math.round(convertedValue * 100), unit: "centimeter" };
     } else if (convertedValue > 1000) {
-      return { value: Math.round(convertedValue / 1000), unit: 'kilometer' };
+      return { value: Math.round(convertedValue / 1000), unit: "kilometer" };
     } else {
-      return { value: Math.round(convertedValue), unit: 'meters' };
+      return { value: Math.round(convertedValue), unit: "meters" };
     }
   }
-  
+
   return null;
 }
 
@@ -144,14 +128,14 @@ export function convertToKilograms(value, unit) {
   };
 
   if (unit in conversionToKilograms) {
-    const convertedValue =  value * conversionToKilograms[unit];
+    const convertedValue = value * conversionToKilograms[unit];
 
     if (convertedValue < 1) {
-      return { value: Math.round(convertedValue * 1000), unit: 'gram' };
+      return { value: Math.round(convertedValue * 1000), unit: "gram" };
     } else {
-      return { value: Math.round(convertedValue), unit: 'kilograms' };
+      return { value: Math.round(convertedValue), unit: "kilograms" };
     }
   }
-  
+
   return null;
 }

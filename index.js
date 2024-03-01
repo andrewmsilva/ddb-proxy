@@ -2,17 +2,17 @@ import express from "express";
 import cors from "cors";
 import crypto from "crypto";
 
-import CONFIG from "./config.js";
-import authentication from "./auth.js";
+import { CONFIG } from "./config.js";
+import { getBearerToken, getCacheId } from "./auth.js";
 
 import filterModifiers from "./filterModifiers.js";
-import lookup from "./lookup.js";
+import { getConfig } from "./lookup.js";
 
-import spells from "./spells.js";
-import character from "./character.js";
-import items from "./items.js";
-import monsters from "./monsters.js";
-import campaign from "./campaign.js";
+import { loadSpells, getSpellAdditions, filterHomebrew } from "./spells.js";
+import { extractCharacterData, getOptionalClassFeatures, getOptionalOrigins } from "./character.js";
+import { extractItems } from "./items.js";
+import { extractMonsters, extractMonstersById } from "./monsters.js";
+import { getCampaigns } from "./campaign.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -26,9 +26,9 @@ const authPath = ["/proxy/auth"];
 app.options(authPath, cors(), (req, res) => res.status(200).send());
 app.post(authPath, cors(), express.json(), (req, res) => {
   if (!req.body.cobalt || req.body.cobalt == "") return res.json({ success: false, message: "No cobalt token" });
-  const cacheId = authentication.getCacheId(req.body.cobalt);
+  const cacheId = getCacheId(req.body.cobalt);
 
-  authentication.getBearerToken(cacheId, req.body.cobalt).then((token) => {
+  getBearerToken(cacheId, req.body.cobalt).then((token) => {
     if (!token) return res.json({ success: false, message: "You must supply a valid cobalt value." });
     return res.status(200).json({ success: true, message: "Authenticated." });
   });
@@ -37,13 +37,9 @@ app.post(authPath, cors(), express.json(), (req, res) => {
 const configLookupCall = "/proxy/api/config/json";
 app.options(configLookupCall, cors(), (req, res) => res.status(200).send());
 app.get(configLookupCall, cors(), express.json(), (req, res) => {
-
-  lookup
-    .getConfig()
+  getConfig()
     .then((data) => {
-      return res
-        .status(200)
-        .json({ success: true, message: "Config retrieved.", data: data });
+      return res.status(200).json({ success: true, message: "Config retrieved.", data: data });
     })
     .catch((error) => {
       console.log(error);
@@ -52,7 +48,6 @@ app.get(configLookupCall, cors(), express.json(), (req, res) => {
       }
       return res.json({ success: false, message: "Unknown error during config loading: " + error });
     });
-
 });
 
 /**
@@ -62,13 +57,12 @@ app.options("/proxy/items", cors(), (req, res) => res.status(200).send());
 app.post("/proxy/items", cors(), express.json(), (req, res) => {
   if (!req.body.cobalt || req.body.cobalt == "") return res.json({ success: false, message: "No cobalt token" });
 
-  const cacheId = authentication.getCacheId(req.body.cobalt);
+  const cacheId = getCacheId(req.body.cobalt);
   const campaignId = req.body.campaignId;
 
-  authentication.getBearerToken(cacheId, req.body.cobalt).then((token) => {
+  getBearerToken(cacheId, req.body.cobalt).then((token) => {
     if (!token) return res.json({ success: false, message: "You must supply a valid cobalt value." });
-    items
-      .extractItems(cacheId, campaignId)
+    extractItems(cacheId, campaignId)
       .then((data) => {
         return res
           .status(200)
@@ -97,7 +91,7 @@ app.post("/proxy/class/spells", cors(), express.json(), (req, res) => {
   if (!req.body.cobalt || req.body.cobalt == "") return res.json({ success: false, message: "No cobalt token" });
   const cobaltToken = req.body.cobalt;
 
-  const cacheId = authentication.getCacheId(cobaltToken);
+  const cacheId = getCacheId(cobaltToken);
 
   const mockClass = [
     {
@@ -117,10 +111,9 @@ app.post("/proxy/class/spells", cors(), express.json(), (req, res) => {
     },
   ];
 
-  authentication.getBearerToken(cacheId, cobaltToken).then((token) => {
+  getBearerToken(cacheId, cobaltToken).then((token) => {
     if (!token) return res.json({ success: false, message: "You must supply a valid cobalt value." });
-    spells
-      .loadSpells(mockClass, cacheId, true)
+    loadSpells(mockClass, cacheId, true)
       .then((data) => {
         // console.log(data);
         const rawSpells = data.map((d) => d.spells).flat();
@@ -164,9 +157,8 @@ app.post(["/proxy/character", "/proxy/v5/character"], cors(), express.json(), (r
   const cobaltId = `${characterId}${cobalt}`;
   let campaignId = null;
 
-  authentication.getBearerToken(cobaltId, cobalt).then(() => {
-    character
-      .extractCharacterData(cobaltId, characterId, updateId) // this caches
+  getBearerToken(cobaltId, cobalt).then(() => {
+    extractCharacterData(cobaltId, characterId, updateId) // this caches
       .then((data) => {
         console.log(`Name: ${data.name}, URL: ${CONFIG.urls.baseUrl}/character/${data.id}`);
         return Promise.resolve(data);
@@ -185,7 +177,7 @@ app.post(["/proxy/character", "/proxy/v5/character"], cors(), express.json(), (r
       .then((result) => {
         if (cobalt) {
           const optionIds = result.character.optionalClassFeatures.map((opt) => opt.classFeatureId);
-          return character.getOptionalClassFeatures(result, optionIds, campaignId, cobaltId);
+          return getOptionalClassFeatures(result, optionIds, campaignId, cobaltId);
         } else {
           console.warn("No cobalt token provided, not fetching optional class features");
           return result;
@@ -194,18 +186,18 @@ app.post(["/proxy/character", "/proxy/v5/character"], cors(), express.json(), (r
       .then((result) => {
         if (cobalt) {
           const optionIds = result.character.optionalOrigins.map((opt) => opt.racialTraitId);
-          return character.getOptionalOrigins(result, optionIds, campaignId, cobaltId);
-        }else {
+          return getOptionalOrigins(result, optionIds, campaignId, cobaltId);
+        } else {
           console.warn("No cobalt token provided, not fetching optional origins");
           return result;
         }
       })
       .then((result) => {
-        return spells.getSpellAdditions(result, cobaltId);
+        return getSpellAdditions(result, cobaltId);
       })
       .then((result) => {
         const includeHomebrew = result.character.preferences.useHomebrewContent;
-        return spells.filterHomebrew(result, includeHomebrew);
+        return filterHomebrew(result, includeHomebrew);
       })
       .then((data) => {
         data = filterModifiers(data);
@@ -250,11 +242,10 @@ app.post(getMonsterProxyRoutes, cors(), express.json(), (req, res) => {
   hash.update(cobalt + searchTerm);
   const cacheId = hash.digest("hex");
 
-  authentication.getBearerToken(cacheId, cobalt).then((token) => {
+  getBearerToken(cacheId, cobalt).then((token) => {
     if (!token) return res.json({ success: false, message: "You must supply a valid cobalt value." });
 
-    monsters
-      .extractMonsters(cacheId, searchTerm, homebrew, homebrewOnly, sources)
+    extractMonsters(cacheId, searchTerm, homebrew, homebrewOnly, sources)
       .then((data) => {
         if (excludeLegacy) {
           const filteredMonsters = data.filter((monster) => !monster.isLegacy);
@@ -308,11 +299,10 @@ app.post(getMonsterIdsProxyRoutes, cors(), express.json(), (req, res) => {
   hash.update(cobalt + ids.join("-"));
   const cacheId = hash.digest("hex");
 
-  authentication.getBearerToken(cacheId, cobalt).then((token) => {
+  getBearerToken(cacheId, cobalt).then((token) => {
     if (!token) return res.json({ success: false, message: "You must supply a valid cobalt value." });
 
-    monsters
-      .extractMonstersById(cacheId, ids)
+    extractMonstersById(cacheId, ids)
       .then((data) => {
         return res
           .status(200)
@@ -332,12 +322,11 @@ app.options("/proxy/campaigns", cors(), (req, res) => res.status(200).send());
 app.post("/proxy/campaigns", cors(), express.json(), (req, res) => {
   if (!req.body.cobalt || req.body.cobalt == "") return res.json({ success: false, message: "No cobalt token" });
 
-  const cacheId = authentication.getCacheId(req.body.cobalt);
+  const cacheId = getCacheId(req.body.cobalt);
 
-  authentication.getBearerToken(cacheId, req.body.cobalt).then((token) => {
+  getBearerToken(cacheId, req.body.cobalt).then((token) => {
     if (!token) return res.json({ success: false, message: "You must supply a valid cobalt value." });
-    campaign
-      .getCampaigns(req.body.cobalt, cacheId)
+    getCampaigns(req.body.cobalt, cacheId)
       .then((data) => {
         return res
           .status(200)

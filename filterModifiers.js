@@ -142,7 +142,7 @@ function filterModifiers(data, classInfo) {
  * =============================================================
  * Get the class information for this character
  */
-function main(data) {
+export default function main(data) {
   console.log("[ MODIFIERS ====================================================== ]");
   const classInfo = getClassInfo(data.character);
   const filteredClassInfo = filterModifiers(data.character, classInfo);
@@ -161,5 +161,3 @@ function main(data) {
   data.character.modifiers.class = classModifiers;
   return data;
 }
-
-module.exports = main;

@@ -1,30 +1,30 @@
 // This data is the light version of data available in the character builder
 import fetch from "node-fetch";
-import CONFIG from "./config.js";
-import authentication from "./auth.js";
-import Cache from "./cache.js";
+import { CONFIG } from "./config.js";
+import { CACHE_AUTH } from "./auth.js";
+import { Cache } from "./cache.js";
 
 const CACHE_CAMPAIGNS = new Cache("CAMPAIGNS", 0.25);
 
 // this endpoint aggressively caches campaigns as it's prone to been marked as a bot
-const getCampaigns = (cobalt, cacheId) => {
+export const getCampaigns = (cobalt, cacheId) => {
   return new Promise((resolve, reject) => {
     const cache = CACHE_CAMPAIGNS.exists(cacheId);
     if (cache !== undefined) {
       return resolve(cache.data);
     }
 
-    const auth = authentication.CACHE_AUTH.exists(cacheId);
+    const auth = CACHE_AUTH.exists(cacheId);
     if (!auth || !auth.data) {
       reject("Unable to authorise cobalt cookie");
     }
 
     const headers = {
-      "Authorization": `Bearer ${auth.data}`,
+      Authorization: `Bearer ${auth.data}`,
       "User-Agent": "Foundry VTT Character Integrator",
-      "Accept": "application/json",
+      Accept: "application/json",
       "Accept-Encoding": "gzip, deflate, br",
-      "Cookie": `CobaltSession=${cobalt}`,
+      Cookie: `CobaltSession=${cobalt}`,
     };
 
     const options = {
@@ -50,5 +50,3 @@ const getCampaigns = (cobalt, cacheId) => {
       });
   });
 };
-
-exports.getCampaigns = getCampaigns;

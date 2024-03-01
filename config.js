@@ -21,27 +21,25 @@ const CLASS_MAP = [
   { name: "Chronurgy", spells: "SPELLS", id: 400659 },
 ];
 
-const BAD_IMAGES = [
-];
+const BAD_IMAGES = [];
 
-const CONFIG = {
+export const CONFIG = {
   badImages: BAD_IMAGES,
   classMap: CLASS_MAP,
   urls: {
     authService: "https://auth-service.dndbeyond.com/v1/cobalt-token",
     baseUrl: "https://character-service.dndbeyond.com/character/v5",
     monsterBaseUrl: "https://monster-service.dndbeyond.com/v1/Monster",
-    characterUrl: (characterId) =>
-      `${CONFIG.urls.baseUrl}/character/${characterId}?includeCustomItems=true`,
+    characterUrl: (characterId) => `${CONFIG.urls.baseUrl}/character/${characterId}?includeCustomItems=true`,
     spellsAPI: (classId, classLevel, campaignId) => {
       let campaign = "";
       if (campaignId) campaign = `&campaignId=${campaignId}`;
       return `${CONFIG.urls.baseUrl}/game-data/spells?classId=${classId}&classLevel=${classLevel}&sharingSetting=2${campaign}`;
     },
-    alwaysPreparedSpells: (classId, classLevel, campaignId, spellListIds=[]) => {
+    alwaysPreparedSpells: (classId, classLevel, campaignId, spellListIds = []) => {
       let campaign = "";
       let spellLists = "";
-      spellListIds.forEach(list => spellLists += `&spellListIds[]=${list}`);
+      spellListIds.forEach((list) => (spellLists += `&spellListIds[]=${list}`));
       if (campaignId) campaign = `&campaignId=${campaignId}`;
       return `${CONFIG.urls.baseUrl}/game-data/always-prepared-spells?classId=${classId}&classLevel=${classLevel}&sharingSetting=2${campaign}${spellLists}`;
     },
@@ -58,9 +56,9 @@ const CONFIG = {
       if (campaignId) campaign = `&campaignId=${campaignId}`;
       return `${CONFIG.urls.baseUrl}/game-data/items?sharingSetting=2${campaign}`;
     },
-    monstersAPI: (skip, take, search="", homebrew=false, homebrewOnly=false, sources=[]) => {
+    monstersAPI: (skip, take, search = "", homebrew = false, homebrewOnly = false, sources = []) => {
       let sourceSearch = sources.reduce((previous, current) => previous + `&sources=${current}`, "");
-      let useHomebrew = (homebrew) ? "" : "&showHomebrew=f";
+      let useHomebrew = homebrew ? "" : "&showHomebrew=f";
       if (homebrewOnly) {
         sourceSearch = "";
         useHomebrew = "&showHomebrew=t";
@@ -87,7 +85,4 @@ const CONFIG = {
     campaignsAPI: "https://www.dndbeyond.com/api/campaign/stt/user-campaigns",
     configUrl: "https://www.dndbeyond.com/api/config/json",
   },
-
 };
-
-module.exports = CONFIG;

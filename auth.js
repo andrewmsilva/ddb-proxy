@@ -1,19 +1,19 @@
 import crypto from "crypto";
-import Cache from "./cache.js";
+import { Cache } from "./cache.js";
 import fetch from "node-fetch";
-import CONFIG from "./config.js";
+import { CONFIG } from "./config.js";
 
-var CACHE_AUTH = new Cache("AUTH", 0.08);
+export var CACHE_AUTH = new Cache("AUTH", 0.08);
 
-function isJSON(str) {
+export function isJSON(str) {
   try {
-    return (JSON.parse(str) && !!str);
+    return JSON.parse(str) && !!str;
   } catch (e) {
     return false;
   }
 }
 
-function getBearerToken(id, cobalt) {
+export function getBearerToken(id, cobalt) {
   return new Promise((resolve) => {
     if (cobalt && cobalt !== "" && !isJSON(`{ "cobalt": "${cobalt}" }`)) {
       console.log(`Invalid token for ${id}`);
@@ -40,16 +40,9 @@ function getBearerToken(id, cobalt) {
   });
 }
 
-
-function getCacheId(value) {
+export function getCacheId(value) {
   const hash = crypto.createHash("sha256");
   hash.update(value);
   const cacheId = hash.digest("hex");
   return cacheId;
 }
-
-
-
-exports.CACHE_AUTH = CACHE_AUTH;
-exports.getBearerToken = getBearerToken;
-exports.getCacheId = getCacheId;

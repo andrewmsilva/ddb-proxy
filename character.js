@@ -1,13 +1,12 @@
 import fetch from "node-fetch";
-import CONFIG from "./config.js";
-import authentication from "./auth.js";
+import { CONFIG } from "./config.js";
+import { CACHE_AUTH } from "./auth.js";
 
-const isValidData = data => {
+const isValidData = (data) => {
   return data.success === true;
 };
 
-
-const extractClassOptions = (cobaltId, optionIds=[], campaignId=null) => {
+export const extractClassOptions = (cobaltId, optionIds = [], campaignId = null) => {
   console.log(optionIds);
 
   return new Promise((resolve, reject) => {
@@ -15,30 +14,34 @@ const extractClassOptions = (cobaltId, optionIds=[], campaignId=null) => {
 
     const url = CONFIG.urls.classOptionsAPI();
     const body = JSON.stringify({
-      "campaignId": campaignId,
-      "sharingSetting": 2,
-      "ids": optionIds,
+      campaignId: campaignId,
+      sharingSetting: 2,
+      ids: optionIds,
     });
 
-    const auth = authentication.CACHE_AUTH.exists(cobaltId);
-    const headers = (auth && auth.data) ? {
-      "Authorization": `Bearer ${auth.data}`,
-      "Content-Type": "application/json",
-      "Content-Length": body.length,
-    } : {};
+    const auth = CACHE_AUTH.exists(cobaltId);
+    const headers =
+      auth && auth.data
+        ? {
+            Authorization: `Bearer ${auth.data}`,
+            "Content-Type": "application/json",
+            "Content-Length": body.length,
+          }
+        : {};
 
     const options = {
       method: "POST",
       headers: headers,
-      body: body
+      body: body,
     };
 
     fetch(url, options)
-      .then(res => res.json())
-      .then(json => {
+      .then((res) => res.json())
+      .then((json) => {
         if (isValidData(json)) {
-          const filteredItems = json.data.definitionData.filter(option =>
-            option.sources && (option.sources.length === 0 || option.sources.some((source) => source.sourceId != 39))
+          const filteredItems = json.data.definitionData.filter(
+            (option) =>
+              option.sources && (option.sources.length === 0 || option.sources.some((source) => source.sourceId != 39))
           );
           resolve(filteredItems);
         } else {
@@ -46,7 +49,7 @@ const extractClassOptions = (cobaltId, optionIds=[], campaignId=null) => {
           reject(json.message);
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.log("Error retrieving class options");
         console.log(error);
         reject(error);
@@ -54,8 +57,7 @@ const extractClassOptions = (cobaltId, optionIds=[], campaignId=null) => {
   });
 };
 
-
-const extractRacialTraitsOptions = (cobaltId, optionIds=[], campaignId=null) => {
+const extractRacialTraitsOptions = (cobaltId, optionIds = [], campaignId = null) => {
   console.log(optionIds);
 
   return new Promise((resolve, reject) => {
@@ -63,30 +65,34 @@ const extractRacialTraitsOptions = (cobaltId, optionIds=[], campaignId=null) => 
 
     const url = CONFIG.urls.racialTraitOptionsAPI();
     const body = JSON.stringify({
-      "campaignId": campaignId,
-      "sharingSetting": 2,
-      "ids": optionIds,
+      campaignId: campaignId,
+      sharingSetting: 2,
+      ids: optionIds,
     });
 
-    const auth = authentication.CACHE_AUTH.exists(cobaltId);
-    const headers = (auth && auth.data) ? {
-      "Authorization": `Bearer ${auth.data}`,
-      "Content-Type": "application/json",
-      "Content-Length": body.length,
-    } : {};
+    const auth = CACHE_AUTH.exists(cobaltId);
+    const headers =
+      auth && auth.data
+        ? {
+            Authorization: `Bearer ${auth.data}`,
+            "Content-Type": "application/json",
+            "Content-Length": body.length,
+          }
+        : {};
 
     const options = {
       method: "POST",
       headers: headers,
-      body: body
+      body: body,
     };
 
     fetch(url, options)
-      .then(res => res.json())
-      .then(json => {
+      .then((res) => res.json())
+      .then((json) => {
         if (isValidData(json)) {
-          const filteredItems = json.data.definitionData.filter(option =>
-            option.sources && (option.sources.length === 0 || option.sources.some((source) => source.sourceId != 39))
+          const filteredItems = json.data.definitionData.filter(
+            (option) =>
+              option.sources && (option.sources.length === 0 || option.sources.some((source) => source.sourceId != 39))
           );
           resolve(filteredItems);
         } else {
@@ -94,7 +100,7 @@ const extractRacialTraitsOptions = (cobaltId, optionIds=[], campaignId=null) => 
           reject(json.message);
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.log("Error retrieving origin options");
         console.log(error);
         reject(error);
@@ -102,7 +108,7 @@ const extractRacialTraitsOptions = (cobaltId, optionIds=[], campaignId=null) => 
   });
 };
 
-const checkStatus = res => {
+const checkStatus = (res) => {
   if (res.ok) {
     // res.status >= 200 && res.status < 300
     return res;
@@ -111,68 +117,60 @@ const checkStatus = res => {
   }
 };
 
-const extractCharacterData = (cobaltId, characterId) => {
+export const extractCharacterData = (cobaltId, characterId) => {
   return new Promise((resolve, reject) => {
     console.log(`Retrieving character id ${characterId}`);
 
-    const auth = authentication.CACHE_AUTH.exists(cobaltId);
-    const headers = (auth) ? {headers: {"Authorization": `Bearer ${auth.data}`}} : {};
+    const auth = CACHE_AUTH.exists(cobaltId);
+    const headers = auth ? { headers: { Authorization: `Bearer ${auth.data}` } } : {};
     const characterUrl = CONFIG.urls.characterUrl(characterId);
     fetch(characterUrl, headers)
       .then(checkStatus)
-      .then(res => res.json())
-      .then(json => {
+      .then((res) => res.json())
+      .then((json) => {
         if (isValidData(json)) {
           resolve(json.data);
         } else {
           reject(json.message);
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.log(`loadCharacterData(${characterId}): ${error}`);
         reject(error);
       });
   });
 };
 
-const getOptionalClassFeatures = (data, optionIds, campaignId, cobaltId) => {
-  const cacheId = authentication.CACHE_AUTH.exists(cobaltId);
+export const getOptionalClassFeatures = (data, optionIds, campaignId, cobaltId) => {
+  const cacheId = CACHE_AUTH.exists(cobaltId);
 
   return new Promise((resolve) => {
     if (cacheId) {
       console.log("CLASS Optional Features:");
 
-      extractClassOptions(cobaltId, optionIds, campaignId)
-        .then(options => {
-          data.classOptions = options;
-          resolve(data);
-        });
+      extractClassOptions(cobaltId, optionIds, campaignId).then((options) => {
+        data.classOptions = options;
+        resolve(data);
+      });
     } else {
       resolve(data);
     }
   });
 };
 
-const getOptionalOrigins = (data, optionIds, campaignId, cobaltId) => {
-  const cacheId = authentication.CACHE_AUTH.exists(cobaltId);
+export const getOptionalOrigins = (data, optionIds, campaignId, cobaltId) => {
+  const cacheId = CACHE_AUTH.exists(cobaltId);
 
   return new Promise((resolve) => {
     if (cacheId) {
       console.log("ORIGIN Optional Features:");
 
-      extractRacialTraitsOptions(cobaltId, optionIds, campaignId)
-        .then(options => {
-          data.originOptions = options;
-          resolve(data);
-        });
+      extractRacialTraitsOptions(cobaltId, optionIds, campaignId).then((options) => {
+        data.originOptions = options;
+        resolve(data);
+      });
     } else {
       resolve(data);
     }
   });
 };
-
-
-exports.extractClassOptions = extractClassOptions;
-exports.extractCharacterData = extractCharacterData;
-exports.getOptionalClassFeatures = getOptionalClassFeatures;
-exports.getOptionalOrigins = getOptionalOrigins;

@@ -1,10 +1,10 @@
-const fetch = require("node-fetch");
-const CONFIG = require("./config.js");
-const Cache = require("./cache.js");
+import fetch from "node-fetch";
+import { CONFIG } from "./config.js";
+import { Cache } from "./cache.js";
 
 var CACHE_CONFIG = new Cache("CONFIG", 1);
 
-const getConfig= () => {
+export const getConfig = () => {
   return new Promise((resolve, reject) => {
     console.log("Retrieving ddb config");
 
@@ -20,7 +20,7 @@ const getConfig= () => {
       credentials: "include",
       headers: {
         "User-Agent": "Foundry VTT Character Integrator",
-        "Accept": "*/*",
+        Accept: "*/*",
       },
       method: "GET",
       mode: "cors",
@@ -28,26 +28,21 @@ const getConfig= () => {
     };
 
     fetch(url, options)
-      .then(res => res.json())
-      .then(json => {
+      .then((res) => res.json())
+      .then((json) => {
         if (json && json.sources) {
           CACHE_CONFIG.add("DDB_CONFIG", json);
-          console.log(
-            "Adding CACHE_CONFIG to cache..."
-          );
+          console.log("Adding CACHE_CONFIG to cache...");
           resolve(json);
         } else {
           console.log("Received no valid config data, instead:" + json);
           reject(json);
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.log("Error retrieving DDB Config");
         console.log(error);
         reject(error);
       });
-
   });
 };
-
-exports.getConfig = getConfig;

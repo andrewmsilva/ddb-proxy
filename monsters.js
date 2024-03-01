@@ -1,23 +1,25 @@
-const fetch = require("node-fetch");
-const CONFIG = require("./config.js");
-const authentication = require("./auth.js");
+import fetch from "node-fetch";
+import { CONFIG } from "./config.js";
+import { CACHE_AUTH } from "./auth.js";
 
-function getMonsterCount(cobaltId, searchTerm="", homebrew, homebrewOnly, sources) {
+function getMonsterCount(cobaltId, searchTerm = "", homebrew, homebrewOnly, sources) {
   return new Promise((resolve, reject) => {
-    const headers = (authentication.CACHE_AUTH.exists(cobaltId).data !== null) ? {headers: {"Authorization": `Bearer ${authentication.CACHE_AUTH.exists(cobaltId).data}`}} : {};
-    const url = CONFIG.urls.monstersAPI(0,1, searchTerm, homebrew, homebrewOnly, sources);
+    const headers =
+      CACHE_AUTH.exists(cobaltId).data !== null
+        ? { headers: { Authorization: `Bearer ${CACHE_AUTH.exists(cobaltId).data}` } }
+        : {};
+    const url = CONFIG.urls.monstersAPI(0, 1, searchTerm, homebrew, homebrewOnly, sources);
     fetch(url, headers)
-      .then(res => res.json())
-      .then(json => {
+      .then((res) => res.json())
+      .then((json) => {
         resolve(json.pagination.total);
       })
-      .catch(error => {
+      .catch((error) => {
         console.log("Error retrieving monsters");
         console.log(error);
         reject(error);
       });
   });
-
 }
 
 function imageFiddleMonsters(monsters) {
@@ -36,51 +38,56 @@ function imageFiddleMonsters(monsters) {
   return imageFiddledMonsters;
 }
 
-const extractMonsters = (cobaltId, searchTerm="", homebrew, homebrewOnly, sources) => {
+export const extractMonsters = (cobaltId, searchTerm = "", homebrew, homebrewOnly, sources) => {
   return new Promise((resolve, reject) => {
     console.log(`Retrieving monsters for ${cobaltId}`);
 
     let monsters = [];
-    const headers = (authentication.CACHE_AUTH.exists(cobaltId).data !== null) ? {headers: {"Authorization": `Bearer ${authentication.CACHE_AUTH.exists(cobaltId).data}`}} : {};
+    const headers =
+      CACHE_AUTH.exists(cobaltId).data !== null
+        ? { headers: { Authorization: `Bearer ${CACHE_AUTH.exists(cobaltId).data}` } }
+        : {};
     let count = 0;
     // fetch 100 monsters at a time - api limit
     let take = 100;
-    getMonsterCount(cobaltId, searchTerm, homebrew, homebrewOnly, sources).then(async (total) => {
-      console.log(`Total monsters ${total}`);
-      const hardTotal = total;
-      while (total >= count && hardTotal >= count) {
-        console.log(`Fetching monsters ${count}`);
-        const url = CONFIG.urls.monstersAPI(count,take,searchTerm, homebrew, homebrewOnly, sources);
-        await fetch(url, headers)
-          .then(res => res.json())
-          .then(json => {
-            const availableMonsters = json.data.filter((monster) => {
-              const isHomebrew = (homebrew) ? monster.isHomebrew === true : false;
-              const available = monster.isReleased === true || isHomebrew;
-              return available;
+    getMonsterCount(cobaltId, searchTerm, homebrew, homebrewOnly, sources)
+      .then(async (total) => {
+        console.log(`Total monsters ${total}`);
+        const hardTotal = total;
+        while (total >= count && hardTotal >= count) {
+          console.log(`Fetching monsters ${count}`);
+          const url = CONFIG.urls.monstersAPI(count, take, searchTerm, homebrew, homebrewOnly, sources);
+          await fetch(url, headers)
+            .then((res) => res.json())
+            .then((json) => {
+              const availableMonsters = json.data.filter((monster) => {
+                const isHomebrew = homebrew ? monster.isHomebrew === true : false;
+                const available = monster.isReleased === true || isHomebrew;
+                return available;
+              });
+              const imageFiddledMonsters = imageFiddleMonsters(availableMonsters);
+              monsters.push(...imageFiddledMonsters);
+            })
+            .catch((error) => {
+              console.log(`Error retrieving monsters at ${count}`);
+              console.log(error);
+              reject(error);
             });
-            const imageFiddledMonsters = imageFiddleMonsters(availableMonsters);
-            monsters.push(...imageFiddledMonsters);
-          })
-          .catch(error => {
-            console.log(`Error retrieving monsters at ${count}`);
-            console.log(error);
-            reject(error);
-          });
-        count += take;
-      }
-      return monsters;
-    }).then((data) => {
-      console.log(`Monster count: ${data.length}.`);
-      resolve(data);
-    }).catch(error => {
-      console.log("Error retrieving monsters");
-      console.log(error);
-      reject(error);
-    });
+          count += take;
+        }
+        return monsters;
+      })
+      .then((data) => {
+        console.log(`Monster count: ${data.length}.`);
+        resolve(data);
+      })
+      .catch((error) => {
+        console.log("Error retrieving monsters");
+        console.log(error);
+        reject(error);
+      });
   });
 };
-
 
 async function getIdCount(ids) {
   return new Promise((resolve) => {
@@ -88,7 +95,7 @@ async function getIdCount(ids) {
   });
 }
 
-function extractMonstersById (cobaltId, ids) {
+export function extractMonstersById(cobaltId, ids) {
   return new Promise((resolve, reject) => {
     console.log(`Retrieving monsters for ${cobaltId} and ${ids}`);
 
@@ -96,38 +103,38 @@ function extractMonstersById (cobaltId, ids) {
     let count = 0;
     let take = 100;
 
-    getIdCount(ids).then(async (total) => {
-      const hardTotal = total;
-      while (total >= count && hardTotal >= count) {
-        const idSelection = ids.slice(count, count + take);
-        const headers
-          = authentication.CACHE_AUTH.exists(cobaltId).data !== null
-            ? { headers: { Authorization: `Bearer ${authentication.CACHE_AUTH.exists(cobaltId).data}` } }
-            : {};
-        const url = CONFIG.urls.monsterIdsAPI(idSelection);
-        await fetch(url, headers)
-          .then((res) => res.json())
-          .then((json) => {
-            // console.log(json.data);
-            const availableMonsters = json.data.filter((monster) => monster.isReleased === true || monster.isHomebrew);
-            const imageFiddledMonsters = imageFiddleMonsters(availableMonsters);
-            monsters.push(...imageFiddledMonsters);
-          })
-          .catch((error) => {
-            console.log("Error retrieving monsters by id");
-            console.log(error);
-            reject(error);
-          });
-        count += take;
-      }
-      return monsters;
-    }).then((data) => {
-      console.log(`Monster count: ${data.length}.`);
-      resolve(data);
-    });
-
+    getIdCount(ids)
+      .then(async (total) => {
+        const hardTotal = total;
+        while (total >= count && hardTotal >= count) {
+          const idSelection = ids.slice(count, count + take);
+          const headers =
+            CACHE_AUTH.exists(cobaltId).data !== null
+              ? { headers: { Authorization: `Bearer ${CACHE_AUTH.exists(cobaltId).data}` } }
+              : {};
+          const url = CONFIG.urls.monsterIdsAPI(idSelection);
+          await fetch(url, headers)
+            .then((res) => res.json())
+            .then((json) => {
+              // console.log(json.data);
+              const availableMonsters = json.data.filter(
+                (monster) => monster.isReleased === true || monster.isHomebrew
+              );
+              const imageFiddledMonsters = imageFiddleMonsters(availableMonsters);
+              monsters.push(...imageFiddledMonsters);
+            })
+            .catch((error) => {
+              console.log("Error retrieving monsters by id");
+              console.log(error);
+              reject(error);
+            });
+          count += take;
+        }
+        return monsters;
+      })
+      .then((data) => {
+        console.log(`Monster count: ${data.length}.`);
+        resolve(data);
+      });
   });
 }
-
-exports.extractMonsters = extractMonsters;
-exports.extractMonstersById = extractMonstersById;
