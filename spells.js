@@ -1,8 +1,8 @@
 import fetch from "node-fetch";
 import { CONFIG } from "./config.js";
 import { CACHE_AUTH } from "./auth.js";
-import { translateContent, convertToMeters } from "./translator/translate-content.js";
-import { translateHtml } from "./translator/translate-html.js";
+import { translateContent, translateHtml } from "./translator/translate.js";
+import { convertToMeters } from "./translator/convert-measure.js";
 
 const isValidData = (data) => {
   return data.success === true;
@@ -48,10 +48,20 @@ const extractSpells = (classInfo, cobaltId) => {
           console.log(
             `Adding ${filteredSpells.length} of ${json.data.length} spells available to a lvl${spellLevelAccess} ${classInfo.name} caster...`
           );
-          resolve(filteredSpells);
+          return filteredSpells;
         } else {
           console.log("Received no valid spell data, instead:" + json.message);
           reject(json.message);
+        }
+      })
+      .then(async (filteredSpells) => {
+        try {
+          console.log("Translating spells...");
+          const translatedSpells = await Promise.all(filteredSpells.map(translateSpell));
+          resolve(translatedSpells);
+        } catch (error) {
+          console.error("Error translating spells");
+          reject(error);
         }
       })
       .catch((error) => {
@@ -83,10 +93,20 @@ const extractAlwaysPreparedSpells = (classInfo, spellListIds = []) => {
           console.log(
             `Adding ${filteredSpells.length} of ${json.data.length} allways prepared spells available to a lvl${spellLevelAccess} ${classInfo.name} caster...`
           );
-          resolve(filteredSpells);
+          return filteredSpells;
         } else {
           console.log("Received no valid spell data, instead:" + json.message);
           reject(json.message);
+        }
+      })
+      .then(async (filteredSpells) => {
+        try {
+          console.log("Translating spells...");
+          const translatedSpells = await Promise.all(filteredSpells.map(translateSpell));
+          resolve(translatedSpells);
+        } catch (error) {
+          console.error("Error translating spells");
+          reject(error);
         }
       })
       .catch((error) => {
@@ -123,10 +143,20 @@ const extractAlwaysKnownSpells = (classInfo, cobaltId, cantrips, spellListIds = 
               return true;
             }
           });
-          resolve(filteredSpells);
+          return filteredSpells;
         } else {
           console.log("Received no valid spell data, instead:" + json.message);
           reject(json.message);
+        }
+      })
+      .then(async (filteredSpells) => {
+        try {
+          console.log("Translating spells...");
+          const translatedSpells = await Promise.all(filteredSpells.map(translateSpell));
+          resolve(translatedSpells);
+        } catch (error) {
+          console.error("Error translating spells");
+          reject(error);
         }
       })
       .catch((error) => {
